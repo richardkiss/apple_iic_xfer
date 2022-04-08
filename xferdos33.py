@@ -55,57 +55,77 @@ Then hit return. >"""
 
 t = input(s)
 
-p = serial.Serial(SERIAL_PORT_DEVICE, 19200, bytesize=serial.SEVENBITS, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, timeout=1)
+p = serial.Serial(
+    SERIAL_PORT_DEVICE,
+    19200,
+    bytesize=serial.SEVENBITS,
+    parity=serial.PARITY_NONE,
+    stopbits=serial.STOPBITS_ONE,
+    timeout=1,
+)
+
 
 def send_blind(t_str: str):
-   t = t_str.encode()
-   for v in t:
-      c = bytes([v])
-      p.write(c)
-      time.sleep(0.25)
+    t = t_str.encode()
+    for v in t:
+        c = bytes([v])
+        p.write(c)
+        time.sleep(0.25)
 
-def send(t_str: str, wait_char_str: str =']'):
-   t = t_str.encode()
-   wait_char = wait_char_str.encode() if wait_char_str else None
 
-   for v in t:
-      c = bytes([v])
-      p.write(c)
-      while 1:
-         c1 = p.read(1)
-         same = c1 == c
-         if c1 == b'\r':
-            c1 = b'\n'
-         sys.stdout.write(c1.decode())
-         sys.stdout.flush()
-         if same: break
-   if wait_char == None: return
-   while 1:
-      c1 = p.read(1)
-      if c1 == b'\r':
-         c1 = b'\n'
-      sys.stdout.write(c1.decode())
-      sys.stdout.flush()
-      if c1 == wait_char: break
+def send(t_str: str, wait_char_str: str = "]"):
+    t = t_str.encode()
+    wait_char = wait_char_str.encode() if wait_char_str else None
+
+    for v in t:
+        c = bytes([v])
+        p.write(c)
+        while 1:
+            c1 = p.read(1)
+            same = c1 == c
+            if c1 == b"\r":
+                c1 = b"\n"
+            sys.stdout.write(c1.decode())
+            sys.stdout.flush()
+            if same:
+                break
+    if wait_char is None:
+        return
+    while 1:
+        c1 = p.read(1)
+        if c1 == b"\r":
+            c1 = b"\n"
+        sys.stdout.write(c1.decode())
+        sys.stdout.flush()
+        if c1 == wait_char:
+            break
+
 
 def send_lines(lines: str):
-   for t in lines.split("\n"):
-       send(t + "\r")
+    for t in lines.split("\n"):
+        send(t + "\r")
 
-def wait_for(sentinal: bytes):
-   f = io.BytesIO()
-   while 1:
-      c1 = p.read(1)
-      if c1 == b'\r':
-         c1 = b'\n'
-      f.write(c1)
-      sys.stdout.write(c1.decode())
-      if c1 == sentinal:
-         break
-   return f.getvalue()
+
+def wait_for(sentinal: bytes) -> bytes:
+    f = io.BytesIO()
+    while 1:
+        c1 = p.read(1)
+        if c1 == b"\r":
+            c1 = b"\n"
+        f.write(c1)
+        sys.stdout.write(c1.decode())
+        if c1 == sentinal:
+            break
+    return f.getvalue()
+
 
 TRACK_RE = re.compile(r"T=([0-9A-F]{2})")
-SECTOR_RE = re.compile(r"([0-9A-F]{64})x([0-9A-F]{64})x([0-9A-F]{64})x([0-9A-F]{64})x([0-9A-F]{64})x([0-9A-F]{64})x([0-9A-F]{64})x([0-9A-F]{64})x\+=([0-9A-F]{2})xE=([0-9A-F]{2})")
+SECTOR_RE = re.compile(
+    r"([0-9A-F]{64})x([0-9A-F]{64})x([0-9A-F]{64})x([0-9A-F]{64})x"
+    r"([0-9A-F]{64})x([0-9A-F]{64})x([0-9A-F]{64})x([0-9A-F]{64})x"
+    r"\+=([0-9A-F]{2})xE=([0-9A-F]{2})"
+)
+
 
 def process_track(dump_bytes: bytes) -> Tuple[int, bytes]:
     dump = dump_bytes.decode()
@@ -115,38 +135,41 @@ def process_track(dump_bytes: bytes) -> Tuple[int, bytes]:
     sectors = SECTOR_RE.findall(dump)
     sector_data = []
     for sector_idx, sector_tuple in enumerate(sectors):
-       d = b''.join(binascii.unhexlify(x) for x in sector_tuple[:8])
-       actual_sum = sum(d) % 256
-       actual_xor = reduce(lambda a, b: a^b, d, 0)
-       expected_sum = int(sector_tuple[8], 16)
-       expected_xor = int(sector_tuple[9], 16)
-       if actual_sum != expected_sum or actual_xor != expected_xor:
-           raise Exception("bad checksum!! aborting")
-       sector_data.append(d)
-       print(track_idx, sector_idx)
-    track_data = b''.join(sector_data)
+        d = b"".join(binascii.unhexlify(x) for x in sector_tuple[:8])
+        actual_sum = sum(d) % 256
+        actual_xor = reduce(lambda a, b: a ^ b, d, 0)
+        expected_sum = int(sector_tuple[8], 16)
+        expected_xor = int(sector_tuple[9], 16)
+        if actual_sum != expected_sum or actual_xor != expected_xor:
+            raise Exception("bad checksum!! aborting")
+        sector_data.append(d)
+        print(track_idx, sector_idx)
+    track_data = b"".join(sector_data)
     return track_idx, track_data
+
 
 def main():
     send_blind("\r\3\rPR#2\r")
-    send("CALL-151\r", wait_char='*')
+    send("CALL-151\r", wait_char="*")
 
     for t in APPLE_BIN.split("\n"):
-       send(t + "\r", wait_char="*")
+        send(t + "\r", wait_char="*")
 
     track_data_list = []
 
     for track in range(35):
-       send("0:%02x\r" % track, wait_char="*")
-       send("8000G\r", wait_char=None)
-       track_dump = wait_for(b"*")
-       actual_track, track_data = process_track(track_dump)
-       track_data_list.append(track_data)
+        send("0:%02x\r" % track, wait_char="*")
+        send("8000G\r", wait_char=None)
+        track_dump = wait_for(b"*")
+        actual_track, track_data = process_track(track_dump)
+        track_data_list.append(track_data)
 
-    disk_data = b''.join(track_data_list)
+    disk_data = b"".join(track_data_list)
 
     f = open(OUTPUT, "wb")
     f.write(disk_data)
     f.close()
 
-main()
+
+if __name__ == "__main__":
+    main()
