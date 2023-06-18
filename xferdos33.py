@@ -73,9 +73,9 @@ def send_blind(t_str: str):
         time.sleep(0.25)
 
 
-def send(t_str: str, wait_char_str: str = "]"):
+def send(t_str: str, wait_char: str = "]"):
     t = t_str.encode()
-    wait_char = wait_char_str.encode() if wait_char_str else None
+    wait_char = wait_char.encode() if wait_char else None
 
     for v in t:
         c = bytes([v])
