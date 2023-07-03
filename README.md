@@ -1,3 +1,22 @@
+[![PyPI - Version](https://img.shields.io/pypi/v/apple-ii-utils.svg)](https://pypi.org/project/apple-ii-utils)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/apple-ii-utils.svg)](https://pypi.org/project/apple-ii-utils)
+
+-----
+
+**Table of Contents**
+
+- [Installation](#installation)
+- [License](#license)
+
+## Installation
+
+```console
+pip install apple-ii-utils
+```
+
+## License
+
+
 apple_iic_xfer
 ==============
 
@@ -21,7 +40,7 @@ Boot a DOS 3.3 disk on the Apple //c, so the RWTS code which reads raw disk sect
 
 ```$ python xferdos33.py output.dsk```
 
-(If you see the message "ImportError: No module named serial", you need to install pyserial.)
+(If you see the message "ImportError: No module named serial", you need to install pyserial with `pip install pyserial`.)
 
 You will see instructions on what to type on the Apple //c to get things started. Follow the instructions.
 

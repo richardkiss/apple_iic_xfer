@@ -15,7 +15,7 @@ import time
 
 import serial
 
-SERIAL_PORT_DEVICE = "/dev/ttyUSB0"
+SERIAL_PORT_DEVICE = "/dev/tty.usbserial-10"
 
 APPLE_BIN = """8000:A9 0F 85 01 18 69 85 85
 8008:09 20 77 80 C6 09 C6 01
